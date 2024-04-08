@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                git 'https://github.com/yourusername/yourwebapp.git'
+                script {
+                    docker.build('yourwebapp:latest')
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    docker.image('yourwebapp:latest').inside {
+                        sh 'npm install'
+                        sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    docker.withRegistry('https://your-registry-url', 'your-docker-credentials') {
+                        docker.image('yourwebapp:latest').push('latest')
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment successful! Notify stakeholders.'
+        }
+        failure {
+            echo 'Deployment failed! Notify team for investigation.'
+        }
+    }
+}
